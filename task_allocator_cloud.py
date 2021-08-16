@@ -7,6 +7,8 @@ from python_arbi_framework.arbi_agent.agent import arbi_agent_excutor
 
 import time
 
+import printInColor as pic
+
 superLargeCost = 99999999
 robot_path_delim = ':'
 robot_robot_delim = ';'
@@ -82,7 +84,7 @@ def planMultiAgentReqest(robotPlans, arbi):
     reqStartTime = time.time()
     res = arbi.request(arbiMAPF,reqMsg)
     reqEndTime = time.time()
-    print("Request took " + str(reqEndTime - reqStartTime) + " seconds")
+    pic.printC("Request took " + str(reqEndTime - reqStartTime) + " seconds", 'warning')
     return res
 
 
@@ -151,7 +153,7 @@ while(1):
     #nGoals = 2
     goals = ("15","1")
     #assumeing for test
-    robots = (robotPlan("agent1","219"),robotPlan("agen2","222"));
+    robots = (robotPlan("agent1","219"),robotPlan("agent2","222"));
     #fill cost matrix
     #n by m matrix. n = n of robots (rows), m = number of goals(cols)
     #cost_mat = np.random.rand(nRobots, nRobots*numWays)*10   
@@ -182,7 +184,7 @@ while(1):
 
     #final Multi Agent plan Request
     finalResult = planMultiAgentReqest(allocRobotPlans,arbiAgent)
-
+    pic.printC("Allocation Result: " + finalResult,'cyan')
     #toss it to other ARBI Agent
     arbiAgent.send(arbiNavManager, finalResult)
 
