@@ -1,6 +1,6 @@
 import numpy as np
 
-def matching(cost_mat, numWays):
+def matching(cost_mat, numWays=1):
     assignment = np.full(cost_mat.shape, False)
     cost = 0
 
