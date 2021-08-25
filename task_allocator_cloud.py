@@ -16,6 +16,10 @@ robot_robot_delim = ';'
 path_path_delim = '-'
 arbiNavManager = "agent://www.arbi.com/navManager"
 arbiMAPF = "agent://www.arbi.com/MAPF"
+arbiMapManager = "agent://www.arbi.com/MapManagerAgent"
+arbiThis = "agent://www.arbi.com/TA"
+
+robotMap = {"lift":["AMR_LIFT1", "AMR_LIFT2"], "tow":["AMR_TOW1","AMR_TOW2"]}
 
 
 class aAgent(ArbiAgent):
@@ -30,7 +34,8 @@ class aAgent(ArbiAgent):
     
     def on_request(self, sender: str, request: str) -> str:
         print(self.agent_url + "\t-> receive request : " + request)
-        return "(request ok)"
+        #return "(request ok)"
+        return handleRequest(request)
     
     """
     def on_notify(self, content):
@@ -61,30 +66,94 @@ def robotPlanList_to_Msg(rpList):
         singleMsg = rp.name + ":" + 
 """
 
-def handleRequest(msg_gl):
-    #(TaskAllocation $role (goal (metadata $goalID) $goalName (argument $arg1 $arg2 ...)))
+def glEx2str(glExpression):
+    gl_str = str(glExpression)
+    if(gl_str[0]=='\"'):
+        return gl_str[1:-1]
+    else:
+        return gl_str
 
-    #keep all the other info in str, take goals out (picking)
-    #goals = []
-    #figure out all applicable robot id from somewhere
-    #robots = []
-    #request robot avilability from map manager and remove unavailable robot, then do planning
+def str2Glstr(str):
+    return ("\"" + str + "\"")
+
+def parseTMreq(gl):
+    role = glEx2str(gl.get_expression(0))
+    if(role == "StoringCarrier" or role == "UnstoringLargeCarrier"): #LIFT
+        corr_robots = robotMap['lift']
+    elif(role == "UnstoringSmallCarrier"):
+        corr_robots = robotMap['tow']
+    else:
+        pic.printC("Unknown Role: " + role, 'fail')
+        #todo: handle exception
     
+    #3 expressions in goal gl
+    gl_goal = gl.get_expression(1)
+    gl_goal_gl = GLFactory.new_gl_from_gl_string(str(gl_goal))
+    if(gl_goal_gl.get_name() == "goal"):
+        #fist element = (metadata $goalID)
+        gl_meta_gl = GLFactory.new_gl_from_gl_string(str(gl_goal_gl.get_expression(0)))
+        goalID = glEx2str(gl_meta_gl.get_expression(0))
+        #second element = $goalName
+        goalName = glEx2str(gl_goal_gl.get_expression(1))
+        #third element = (argument $arg1 $arg2 $arg3)
+        goalArgs_str = str(gl_goal_gl.get_expression(2))
+        goalArgs = goalArgs_str[1:-1].split(' ')
+        #remove quotation marks
+        for i in range(len(goalArgs)):
+            goalArgs[i] = goalArgs[i][1:-1]
+        #remove gl name
+        goalArgs.pop(0)
+        #remove "station" string
+        for ind in range(1,len(goalArgs)):
+            arg_sp = goalArgs[ind].split('station')
+            if(len(arg_sp)==2):
+                goalArgs[ind] = arg_sp[1]
+            else:
+                pic.printC("Goal Arg Does Not Contain \"station\"",'fail')
 
-    goals = ("15","1")
-    #assumeing for test
-    #robotPlan(robot_id,current_vertex(in str))
-    robots = (robotPlan("agent1","219"),robotPlan("agent2","222"));
-    #fill cost matrix
-    #n by m matrix. n = n of robots (rows), m = number of goals(cols)
-    #cost_mat = np.random.rand(nRobots, nRobots*numWays)*10   
+    #for test
+    #goals = ("15","1")
+    goals = []
+    for g in range(1,len(goalArgs)):
+        if (len(goalArgs[g]) > 0):
+            goals.append(goalArgs[g])
 
+    robotPlanSet = []
+    for r in corr_robots:
+        #get vertex and availability of each robot from map manager
+        res = arbiAgent.query(arbiMapManager,"(RobotSpecInfo \"" + r + "\")")
+        #(RobotSpecInfo (RobotInfo $robot_id (vertex_id $v_id1 $v_id2) $load $goal), …)
+        res_gl = GLFactory.new_gl_from_gl_string(res)
+        #(RobotInfo $robot_id (vertex_id $v_id1 $v_id2) $load $goal)           
+        res_sub_gl = GLFactory.new_gl_from_gl_string(str(res_gl.get_expression(0)))
+        if(glEx2str(res_sub_gl.get_expression(0)) == r):
+            #choose the first neighboring vertex as the start point
+            v = glEx2str(GLFactory.new_gl_from_gl_string(str(res_sub_gl.get_expression(1))).get_expression(0))
+            #todo: clarify load message contents
+            load = glEx2str(res_sub_gl.get_expression(1))
+            #not currently in use
+            cur_goal=glEx2str(res_sub_gl.get_expression(2))
+            #todo: if robot is not loaded
+            robotPlanSet.append(robotPlan(r,v))
+
+        else:
+            pic.printC("Robot ID not Matched", 'fail')
+    return corr_robots, goalID, goalName, goalArgs, robotPlanSet, goals
+
+def allocationCore(robots,goals):
     cost_mat = generateCostMatrix(robots,goals,arbiAgent)
-
+    #fill missing rows/cols to make it square
+    cost_mat = makeSqMat(cost_mat)
     #assignment, cost = matching.matching(cost_mat, numWays)
     assignment, cost = matching.matching(cost_mat)
-
     allocMat = assignment.astype("int")
+
+    #remove allocation with super large cost
+    c_rows, c_cols = cost_mat.shape
+    for i in range(c_rows):
+        for j in range(c_cols):
+            if(cost_mat[i,j] > (superLargeCost-1)):
+                allocMat[i,j] = int(0)
 
     #print("***RESULT (numWays = %d)***\n" %numWays)
     print("***RESULT***\n")
@@ -102,13 +171,64 @@ def handleRequest(msg_gl):
             if(allocMat[row][col] == 1):
                 robots[row].goal = goals[col]
                 allocRobotPlans.append(robots[row])
+    
+    return allocRobotPlans
 
+
+def generate_TM_response(allocRobotPlans):
     #final Multi Agent plan Request
     finalResult_gl = planMultiAgentReqest(allocRobotPlans,arbiAgent)
-    pic.printC("Allocation Result: " + arbi2msg_res(finalResult_gl),'cyan')
-    return finalResult_gl
-    #toss it to other ARBI Agent
-    #arbiAgent.send(arbiNavManager, finalResult)
+    finalResult = arbi2msg_res(finalResult_gl)
+    pic.printC("Allocation Result: " + finalResult,'cyan')
+    finalResult_list_by_robot = finalResult.split(robot_robot_delim)
+    out_id_goal_pair_list = []
+    for robot in finalResult_list_by_robot:
+        robot_sp = robot.split(robot_path_delim)
+        robot_id_out = robot_sp[0]
+        goal_vertex = robot_sp[1].split(path_path_delim)[-1]
+        out_id_goal_pair_list.append((robot_id_out,goal_vertex))
+    
+    #generate returning gl string
+    #currently assuming there is only one task allocation each time
+    out_str = "(agentRecommanded"
+    for pair in out_id_goal_pair_list:
+        out_str+=(" " + str2Glstr(pair[0]) + " " + str2Glstr("station"+pair[1]))
+    out_str += ")"
+
+    return out_str
+
+def handleRequest(msg_gl):
+    #(TaskAllocation $role (goal (metadata $goalID) $goalName (argument $arg1 $arg2 ...)))
+    #keep all the other info in str, take goals out (picking)
+    #goals = []
+    #figure out all applicable robot id from somewhere
+    #robots = []
+    #request robot avilability from map manager and remove unavailable robot, then do planning
+    corr_robots = []
+    goalID = "" #keep and return as it is
+    goalName = "" #keep and return as it is
+    goalArgs = [] #this stores target
+    gl=GLFactory.new_gl_from_gl_string(msg_gl)
+    gl_name = gl.get_name()
+    if(gl_name == 'taskAllocation'):
+        corr_robots, goalID, goalName, goalArgs, robotPlanSet, goals = parseTMreq(gl)
+        #assumeing for test
+        #robotPlan(robot_id,current_vertex(in str))
+        #for test
+        #robots = (robotPlan("agent1","219"),robotPlan("agent2","222"));
+        robots = robotPlanSet
+        #fill cost matrix
+        #n by m matrix. n = n of robots (rows), m = number of goals(cols)
+        #cost_mat = np.random.rand(nRobots, nRobots*numWays)*10   
+        allocRobotPlans = allocationCore(robots,goals)
+        #final Multi Agent plan Request
+        return generate_TM_response(allocRobotPlans)
+        #return finalResult_gl
+        #toss it to other ARBI Agent
+        #arbiAgent.send(arbiNavManager, finalResult)
+    else:
+        pic.printC("Unknown Request GL Name " + gl_name,'fail')
+        return
 
 
 def msg2arbi_req(msg, header="MultiRobotPath", pathHeader = "RobotPath"):
@@ -153,6 +273,7 @@ def responsToDict(res):
     out_dict = {}
     #robots are separated by robot_robot_delim
     resByRobots = res.split(robot_robot_delim)
+    
     for pathMsg in resByRobots:
         #name and path nodes are separated by robot_path_delim
         pathMsg_sp = pathMsg.split(robot_path_delim)
@@ -203,7 +324,9 @@ def generateCostMatrix(robotPlans,goals,arbi):
             #reqEndTime = time.time()
             #print("Request took " + str(reqEndTime - reqStartTime) + " seconds")
             #expect to have result for only one robot
-            planResultDict = responsToDict(pathMsg)
+            planResultDict = {}
+            if(len(pathMsg)>0):
+                planResultDict = responsToDict(pathMsg)
             #fill cost matrix
             #if robot name is matched
             if(r.name in planResultDict):
@@ -212,6 +335,9 @@ def generateCostMatrix(robotPlans,goals,arbi):
                     serializedCosts.append(len(planResultDict[r.name]))
                 else:
                     #path plan failed. apply super large cost
+                    serializedCosts.append(superLargeCost)
+            else:
+                #path plan failed. apply super large cost
                     serializedCosts.append(superLargeCost)
             """
             pathMsg_sp = pathMsg.split(',')
@@ -235,58 +361,77 @@ def generateCostMatrix(robotPlans,goals,arbi):
 
     return costMat
 
+def makeSqMat(mat):
+    n, m = mat.shape
+    if m > n:
+        dummy_mat = superLargeCost*np.full(((m-n), m), 1)
+        mat = np.vstack((mat, dummy_mat))
+    elif m < n:
+        dummy_mat = superLargeCost*np.full((n, (n-m)), 1)
+        mat = np.hstack((mat, dummy_mat))
 
-#Create and start an ARBI Agent
-arbiAgent = aAgent("agent://www.arbi.com/TA")
-arbiAgent.execute()
+    return mat
 
-while(1):
-    time.sleep(0.01)
-    """
-    print("Press a Key to Begin a Test Run")
-    input()
-    #one path to one target
-    #numWays = 1
-    #number of robots
-    #nRobots=2
+if __name__ == "__main__":
+    #Create and start an ARBI Agent
+    global arbiAgent
+    arbiAgent = aAgent(arbiThis)
+    arbiAgent.execute()
 
-    #get number of goals from somewhere
-    #nGoals = 2
-    goals = ("15","1")
-    #assumeing for test
-    robots = (robotPlan("agent1","219"),robotPlan("agent2","222"));
-    #fill cost matrix
-    #n by m matrix. n = n of robots (rows), m = number of goals(cols)
-    #cost_mat = np.random.rand(nRobots, nRobots*numWays)*10   
+    while(1):
+        time.sleep(0.01)
+        """
+        print("Press a Key to Begin a Test Run")
+        input()
+        #one path to one target
+        #numWays = 1
+        #number of robots
+        #nRobots=2
 
-    cost_mat = generateCostMatrix(robots,goals,arbiAgent)
+        #get number of goals from somewhere
+        #nGoals = 2
+        goals = ("22","1")
+        #assumeing for test
+        robots = (robotPlan("agent1","219"),robotPlan("agent2","222"));
+        #fill cost matrix
+        #n by m matrix. n = n of robots (rows), m = number of goals(cols)
+        #cost_mat = np.random.rand(nRobots, nRobots*numWays)*10   
 
-    #assignment, cost = matching.matching(cost_mat, numWays)
-    assignment, cost = matching.matching(cost_mat)
+        cost_mat = generateCostMatrix(robots,goals,arbiAgent)
 
-    allocMat = assignment.astype("int")
+        #assignment, cost = matching.matching(cost_mat, numWays)
+        assignment, cost = matching.matching(cost_mat)
 
-    #print("***RESULT (numWays = %d)***\n" %numWays)
-    print("***RESULT***\n")
-    print("The cost matrix")
-    print(cost_mat)
-    print("\nThe optimal allocation")
-    print(allocMat)
-    print("\nThe cost sum: %f" %cost)
-    
-    #iterate matrix to extract allocation result
-    #result = name1:node1,node2, ... ,noden;name2:node1,node2, ... ,noden
-    allocRobotPlans = []
-    for row in range(len(robots)):
-        for col in range(len(goals)):
-            if(allocMat[row][col] == 1):
-                robots[row].goal = goals[col]
-                allocRobotPlans.append(robots[row])
+        allocMat = assignment.astype("int")
 
-    #final Multi Agent plan Request
-    finalResult_gl = planMultiAgentReqest(allocRobotPlans,arbiAgent)
-    pic.printC("Allocation Result: " + arbi2msg_res(finalResult_gl),'cyan')
-    #toss it to other ARBI Agent
-    #arbiAgent.send(arbiNavManager, finalResult)
-    """
+        #remove allocation with super large cost
+        c_rows, c_cols = cost_mat.shape
+        for i in range(c_rows):
+            for j in range(c_cols):
+                if(cost_mat[i,j] > (superLargeCost-1)):
+                    allocMat[i,j] = int(0)
+
+        #print("***RESULT (numWays = %d)***\n" %numWays)
+        print("***RESULT***\n")
+        print("The cost matrix")
+        print(cost_mat)
+        print("\nThe optimal allocation")
+        print(allocMat)
+        print("\nThe cost sum: %f" %cost)
+        
+        #iterate matrix to extract allocation result
+        #result = name1:node1,node2, ... ,noden;name2:node1,node2, ... ,noden
+        allocRobotPlans = []
+        for row in range(len(robots)):
+            for col in range(len(goals)):
+                if(allocMat[row][col] == 1):
+                    robots[row].goal = goals[col]
+                    allocRobotPlans.append(robots[row])
+
+        #final Multi Agent plan Request
+        finalResult_gl = planMultiAgentReqest(allocRobotPlans,arbiAgent)
+        pic.printC("Allocation Result: " + arbi2msg_res(finalResult_gl),'cyan')
+        #toss it to other ARBI Agent
+        #arbiAgent.send(arbiNavManager, finalResult)
+        """
 

@@ -28,5 +28,7 @@ def printC(str,color = 'title'):
         print(bcolors.UNDERLINE + str + bcolors.ENDC)
     elif(color == 'warning'):
         print(bcolors.WARNING + str + bcolors.ENDC)
+    elif(color == 'fail'):
+        print(bcolors.FAIL + str + bcolors.ENDC)
     else:
         print(str)

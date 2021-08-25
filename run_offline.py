@@ -27,8 +27,8 @@ print("\nThe cost sum: %f" %cost)
 
 bigC = 1000
 numWays = 1
-n = 3
-m = 4
+n = 2
+m = 1
 cost_mat = np.random.rand(n, m*numWays)*10
 
 if m > n:
