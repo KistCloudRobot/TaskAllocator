@@ -1,4 +1,4 @@
-import matching
+import deps.matching as matching
 import numpy as np
 
 from python_arbi_framework.arbi_agent.agent.arbi_agent import ArbiAgent
@@ -7,8 +7,7 @@ from python_arbi_framework.arbi_agent.agent import arbi_agent_excutor
 from arbi_agent.model import generalized_list_factory as GLFactory
 
 import time
-
-import printInColor as pic
+import deps.printInColor as pic
 
 superLargeCost = 99999999
 robot_path_delim = ':'
@@ -49,8 +48,6 @@ class aAgent(ArbiAgent):
     def execute(self, broker_type=2):
         arbi_agent_excutor.excute(self.broker_url, self.agent_name, self, broker_type)
         print(self.agent_name + " ready")
-
-
 
 class robotPlan:
     def __init__(self,name,start,goal=""):
