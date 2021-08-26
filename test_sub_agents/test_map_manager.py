@@ -44,7 +44,7 @@ def handle_request(msg):
     testPosMap = {"AMR_LIFT1":"202","AMR_LIFT2":"223"}
     gl = GLFactory.new_gl_from_gl_string(msg)
     rId = str(gl.get_expression(0))[1:-1]
-    return ("(RobotSpecInfo " + "(RobotInfo \"" + rId + "\" (vertex_id " + testPosMap[rId] +")" + " \"false\"" + " 1))")
+    return ("(RobotSpecInfo " + "(RobotInfo \"" + rId + "\" (vertex_id " + testPosMap[rId] +")" + " 0" + " 1))")
 
 
 arbi = aAgent(arbiMapManager)

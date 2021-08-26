@@ -129,12 +129,13 @@ def parseTMreq(gl):
         if(glEx2str(res_sub_gl.get_expression(0)) == r):
             #choose the first neighboring vertex as the start point
             v = glEx2str(GLFactory.new_gl_from_gl_string(str(res_sub_gl.get_expression(1))).get_expression(0))
-            #todo: clarify load message contents
-            load = glEx2str(res_sub_gl.get_expression(1))
+            #unload = 0, load = 1
+            load = str(res_sub_gl.get_expression(2))
             #not currently in use
-            cur_goal=glEx2str(res_sub_gl.get_expression(2))
-            #todo: if robot is not loaded
-            robotPlanSet.append(robotPlan(r,v))
+            cur_goal=str(res_sub_gl.get_expression(3))
+            #do not add to robot list if robot is loaded
+            if(load == '0'):
+                robotPlanSet.append(robotPlan(r,v))
 
         else:
             pic.printC("Robot ID not Matched", 'fail')
@@ -175,7 +176,7 @@ def allocationCore(robots,goals):
     return allocRobotPlans
 
 
-def generate_TM_response(allocRobotPlans):
+def generate_TM_response(allocRobotPlans, goalID):
     #final Multi Agent plan Request
     finalResult_gl = planMultiAgentReqest(allocRobotPlans,arbiAgent)
     finalResult = arbi2msg_res(finalResult_gl)
@@ -192,7 +193,7 @@ def generate_TM_response(allocRobotPlans):
     #currently assuming there is only one task allocation each time
     out_str = "(agentRecommanded"
     for pair in out_id_goal_pair_list:
-        out_str+=(" " + str2Glstr(pair[0]) + " " + str2Glstr("station"+pair[1]))
+        out_str+=(" " + str2Glstr(pair[0]) + " " + goalID)
     out_str += ")"
 
     return out_str
@@ -216,13 +217,16 @@ def handleRequest(msg_gl):
         #robotPlan(robot_id,current_vertex(in str))
         #for test
         #robots = (robotPlan("agent1","219"),robotPlan("agent2","222"));
+        if(len(robotPlanSet)==0):
+            #no robot is available. return no allocation here
+            return ("(agentRecommanded " + "\"failed\" " + str2Glstr(goalID) + ")")
         robots = robotPlanSet
         #fill cost matrix
         #n by m matrix. n = n of robots (rows), m = number of goals(cols)
         #cost_mat = np.random.rand(nRobots, nRobots*numWays)*10   
         allocRobotPlans = allocationCore(robots,goals)
         #final Multi Agent plan Request
-        return generate_TM_response(allocRobotPlans)
+        return generate_TM_response(allocRobotPlans, goalID)
         #return finalResult_gl
         #toss it to other ARBI Agent
         #arbiAgent.send(arbiNavManager, finalResult)
