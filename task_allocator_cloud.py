@@ -58,13 +58,6 @@ class robotPlan:
         self.start = start
         self.goal = goal
 
-"""
-def robotPlanList_to_Msg(rpList):
-    #result = name1:node1,node2, ... ,node[n];name2:node1,node2, ... ,node[n]
-    msgByRobot = []
-    for rp in rpList:
-        singleMsg = rp.name + ":" + 
-"""
 
 def glEx2str(glExpression):
     gl_str = str(glExpression)
@@ -201,9 +194,7 @@ def generate_TM_response(allocRobotPlans, goalID):
 def handleRequest(msg_gl):
     #(TaskAllocation $role (goal (metadata $goalID) $goalName (argument $arg1 $arg2 ...)))
     #keep all the other info in str, take goals out (picking)
-    #goals = []
-    #figure out all applicable robot id from somewhere
-    #robots = []
+    #figure out all applicable robot id from somewhere. Currently predefined
     #request robot avilability from map manager and remove unavailable robot, then do planning
     corr_robots = []
     goalID = "" #keep and return as it is
@@ -384,58 +375,5 @@ if __name__ == "__main__":
 
     while(1):
         time.sleep(0.01)
-        """
-        print("Press a Key to Begin a Test Run")
-        input()
-        #one path to one target
-        #numWays = 1
-        #number of robots
-        #nRobots=2
-
-        #get number of goals from somewhere
-        #nGoals = 2
-        goals = ("22","1")
-        #assumeing for test
-        robots = (robotPlan("agent1","219"),robotPlan("agent2","222"));
-        #fill cost matrix
-        #n by m matrix. n = n of robots (rows), m = number of goals(cols)
-        #cost_mat = np.random.rand(nRobots, nRobots*numWays)*10   
-
-        cost_mat = generateCostMatrix(robots,goals,arbiAgent)
-
-        #assignment, cost = matching.matching(cost_mat, numWays)
-        assignment, cost = matching.matching(cost_mat)
-
-        allocMat = assignment.astype("int")
-
-        #remove allocation with super large cost
-        c_rows, c_cols = cost_mat.shape
-        for i in range(c_rows):
-            for j in range(c_cols):
-                if(cost_mat[i,j] > (superLargeCost-1)):
-                    allocMat[i,j] = int(0)
-
-        #print("***RESULT (numWays = %d)***\n" %numWays)
-        print("***RESULT***\n")
-        print("The cost matrix")
-        print(cost_mat)
-        print("\nThe optimal allocation")
-        print(allocMat)
-        print("\nThe cost sum: %f" %cost)
         
-        #iterate matrix to extract allocation result
-        #result = name1:node1,node2, ... ,noden;name2:node1,node2, ... ,noden
-        allocRobotPlans = []
-        for row in range(len(robots)):
-            for col in range(len(goals)):
-                if(allocMat[row][col] == 1):
-                    robots[row].goal = goals[col]
-                    allocRobotPlans.append(robots[row])
-
-        #final Multi Agent plan Request
-        finalResult_gl = planMultiAgentReqest(allocRobotPlans,arbiAgent)
-        pic.printC("Allocation Result: " + arbi2msg_res(finalResult_gl),'cyan')
-        #toss it to other ARBI Agent
-        #arbiAgent.send(arbiNavManager, finalResult)
-        """
 
