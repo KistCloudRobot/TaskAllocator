@@ -41,7 +41,7 @@ class aAgent(ArbiAgent):
         print(self.agent_name + " ready")
 
 def handle_request(msg):
-    testPosMap = {"AMR_LIFT1":"202","AMR_LIFT2":"223"}
+    testPosMap = {"AMR_LIFT1":"202","AMR_LIFT2":"223", "AMR_TOW1":"230", "AMR_TOW2":"239"}
     gl = GLFactory.new_gl_from_gl_string(msg)
     rId = str(gl.get_expression(0))[1:-1]
     return ("(RobotSpecInfo " + "(RobotInfo \"" + rId + "\" (vertex_id " + testPosMap[rId] +")" + " 0" + " 1))")

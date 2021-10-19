@@ -47,7 +47,9 @@ arbi = aAgent("agent://www.arbi.com/TM")
 arbi.execute()
 
 #testMsg = "(taskAllocation \"StoringCarrier\" (goal (metadata \"donno\") \"dc\" (argument \"idk\" \"station3\" \"station6\")))"
-testMsg = "(taskAllocation \"StoringCarrier\" (goal (metadata \"donno\") \"dc\" (argument \"idk\" \"station3\" \"\")))"
+#testMsg = "(taskAllocation \"StoringCarrier\" (goal (metadata \"donno\") \"dc\" (argument \"idk\" \"station3\" \"\")))"
+#testMsg = "(TaskAllocation (role \"goalID1\" \"station3\"))"
+testMsg = "(TaskAllocation (role \"goalID1\" \"station3\") (role \"goalID2\" \"station6\") (role \"towGoal\" \"station20\"))"
 
 print(arbi.request(arbiTA,testMsg))
 
