@@ -66,7 +66,7 @@ def handleRequest(msg_gl):
     gl_name = gl.get_name()
     if(gl_name == alloc_gl_name):
         #corr_robots, goalID, goalName, goalArgs, robotPlanSet, goals = parseTMreq(gl)
-        corr_robots, goalID, robotPlanSet, goals = parseTMreq(gl)
+        corr_robots, goalID, robotPlanSet, goals, is_station_dict = parseTMreq(gl)
         #assumeing for test
         #robotPlan(robot_id,current_vertex(in str))
         #for test
@@ -81,7 +81,7 @@ def handleRequest(msg_gl):
         #cost_mat = np.random.rand(nRobots, nRobots*numWays)*10   
         allocRobotPlans = alloc.allocationCore(robots,goals,arbiAgent,arbiMAPF)
         #final Multi Agent plan Request
-        return generate_TM_response(allocRobotPlans, goalID)
+        return generate_TM_response(allocRobotPlans, goalID, is_station_dict)
         #return finalResult_gl
         #toss it to other ARBI Agent
         #arbiAgent.send(arbiNavManager, finalResult)
@@ -103,6 +103,8 @@ def parseTMreq(gl):
     goalID = {}
     goals = []
 
+    is_station_dict={}
+
     #iterate goal gls
     for g_ind in range(num_of_goals):
         goal_gl = gl.get_expression(g_ind)
@@ -116,9 +118,11 @@ def parseTMreq(gl):
         arg_sp = station_in.split('station')
         if(len(arg_sp)==2):
             goals.append(arg_sp[1])
+            is_station_dict[arg_sp[1]] = True
         else:
-            pic.printC("Goal ame does not contain \"station\"",'fail')
-            goals.append(arg_sp)
+            pic.printC("Goal name does not contain \"station\"",'warning')
+            goals.append(arg_sp[0])
+            is_station_dict[arg_sp[0]] = False
 
     #use all robots for all plannings for now
     corr_robots = robot_names_all  
@@ -145,13 +149,15 @@ def parseTMreq(gl):
         else:
             pic.printC("Robot ID not Matched", 'fail')
     #return corr_robots, goalID, goalName, goalArgs, robotPlanSet, goals[0] #assume this GL constains only one task allocation request
-    return corr_robots, goalID, robotPlanSet ,goals
+    return corr_robots, goalID, robotPlanSet ,goals, is_station_dict
 
 
-def generate_TM_response(allocRobotPlans, goalID):
+def generate_TM_response(allocRobotPlans, goalID, is_station_dict):
     #final Multi Agent plan Request
     finalResult_gl = alloc.planMultiAgentReqest(allocRobotPlans,arbiAgent,arbiMAPF)
     finalResult = c.arbi2msg_res(finalResult_gl)
+    if(finalResult == ''): #failed
+        return c.msg2arbi_req('failed')
     pic.printC("Allocation Result: " + finalResult,'cyan')
     finalResult_list_by_robot = finalResult.split(c.robot_robot_delim)
     out_id_goal_pair_list = []
@@ -166,7 +172,10 @@ def generate_TM_response(allocRobotPlans, goalID):
     out_str = "("+out_gl_name
     for pair in out_id_goal_pair_list:
         #out_str+=(" " + str2Glstr(pair[0]) + " " + goalID)
-        out_str+=("(Allocation " + "\"" + goalID["station"+str(pair[1])] + "\"" + " " + c.str2Glstr(pair[0])+")")
+        station_str = ""
+        if(is_station_dict[pair[1]]==True):
+            station_str = "station"
+        out_str+=(" (Allocation " + "\"" + goalID[station_str+str(pair[1])] + "\"" + " " + c.str2Glstr(pair[0])+")")
     out_str += ")"
 
     return out_str

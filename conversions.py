@@ -25,20 +25,24 @@ def str2Glstr(str):
 
 
 def msg2arbi_req(msg, header="MultiRobotPath", pathHeader = "RobotPath"):
-    # name1,start1,goal1;name2,start2,goal2, ...
-    # (MultiRobotPath (RobotPath $robot_id $cur_vertex $goal_id), …)
-    
-    out_msg = "(" + header + " "
-    planList = []
-    msgList = msg.split(robot_robot_delim)
-    for r in msgList:
-        # name1,start1,goal1
-        #(RobotPath $robot_id $cur_vertex $goal_id) -> append to planList
-        elems = r.split(robot_path_delim)
-        planList.append('(' + pathHeader + " " + "\"" + elems[0] + "\" " + elems[1] + " " + elems[2] + ')')
-    
-    out_msg += ' '.join(planList)
-    out_msg += ')'
+    out_msg = ''
+    if(msg == 'failed'):
+        out_msg = "(" + header + " " + msg + ")"
+    else:
+        # name1,start1,goal1;name2,start2,goal2, ...
+        # (MultiRobotPath (RobotPath $robot_id $cur_vertex $goal_id), …)
+        
+        out_msg = "(" + header + " "
+        planList = []
+        msgList = msg.split(robot_robot_delim)
+        for r in msgList:
+            # name1,start1,goal1
+            #(RobotPath $robot_id $cur_vertex $goal_id) -> append to planList
+            elems = r.split(robot_path_delim)
+            planList.append('(' + pathHeader + " " + "\"" + elems[0] + "\" " + elems[1] + " " + elems[2] + ')')
+        
+        out_msg += ' '.join(planList)
+        out_msg += ')'
 
     return out_msg
 

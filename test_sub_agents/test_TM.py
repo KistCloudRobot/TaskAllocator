@@ -49,7 +49,8 @@ arbi.execute()
 #testMsg = "(taskAllocation \"StoringCarrier\" (goal (metadata \"donno\") \"dc\" (argument \"idk\" \"station3\" \"station6\")))"
 #testMsg = "(taskAllocation \"StoringCarrier\" (goal (metadata \"donno\") \"dc\" (argument \"idk\" \"station3\" \"\")))"
 #testMsg = "(TaskAllocation (role \"goalID1\" \"station3\"))"
-testMsg = "(TaskAllocation (role \"goalID1\" \"station3\") (role \"goalID2\" \"station6\") (role \"towGoal\" \"station20\"))"
+#testMsg = "(TaskAllocation (role \"goalID1\" \"station3\") (role \"goalID2\" \"station6\") (role \"towGoal\" \"station20\"))"
+testMsg = "(TaskAllocation (role \"goalID1\" \"234\") (role \"goalID2\" \"235\")"
 
 print(arbi.request(arbiTA,testMsg))
 
