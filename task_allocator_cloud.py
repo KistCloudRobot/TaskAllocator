@@ -66,6 +66,7 @@ def handleRequest(msg_gl):
     gl_name = gl.get_name()
     if(gl_name == alloc_gl_name):
         #corr_robots, goalID, goalName, goalArgs, robotPlanSet, goals = parseTMreq(gl)
+        #It will get current positions of all robots as well
         corr_robots, goalID, robotPlanSet, goals, is_station_dict = parseTMreq(gl)
         #assumeing for test
         #robotPlan(robot_id,current_vertex(in str))

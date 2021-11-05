@@ -13,6 +13,7 @@ import conversions as c
 import robotPlan_class as rc
 
 def allocationCore(robots,goals,arbiAgent,arbiMAPF):
+    #create and fill cost matrix
     cost_mat = generateCostMatrix(robots,goals,arbiAgent,arbiMAPF)
     #fill missing rows/cols to make it square
     cost_mat = c.makeSqMat(cost_mat)
