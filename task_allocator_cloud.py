@@ -132,7 +132,7 @@ def parseTMreq(gl):
     for r in corr_robots:
         #get vertex and availability of each robot from map manager
         res = arbiAgent.query(arbiMapManager,"(RobotSpecInfo \"" + r + "\")")
-        #(RobotSpecInfo (RobotInfo $robot_id (vertex_id $v_id1 $v_id2) $load $goal), …)
+        #(RobotSpecInfo (RobotInfo $robot_id (vertex_id $v_id1 $v_id2) $load $goalVertex $goalID), …)
         res_gl = GLFactory.new_gl_from_gl_string(res)
         #(RobotInfo $robot_id (vertex_id $v_id1 $v_id2) $load $goal)           
         res_sub_gl = GLFactory.new_gl_from_gl_string(str(res_gl.get_expression(0)))
@@ -143,8 +143,10 @@ def parseTMreq(gl):
             load = str(res_sub_gl.get_expression(2))
             #not currently in use
             cur_goal=str(res_sub_gl.get_expression(3))
-            #do not add to robot list if robot is loaded
-            if(load == '0'):
+            #goal_id = allocated task id (0 means robot is not working currently)
+            goal_id = str(res_sub_gl.get_expression(4))
+            #do not add to robot list if robot is allocated
+            if(goal_id == '0'):
                 robotPlanSet.append(rc.robotPlan(r,v))
 
         else:
