@@ -1,6 +1,6 @@
-from python_arbi_framework.arbi_agent.agent.arbi_agent import ArbiAgent
-from python_arbi_framework.arbi_agent.configuration import BrokerType
-from python_arbi_framework.arbi_agent.agent import arbi_agent_excutor
+from arbi_agent.agent.arbi_agent import ArbiAgent
+from arbi_agent.configuration import BrokerType
+from arbi_agent.agent import arbi_agent_executor
 from arbi_agent.model import generalized_list_factory as GLFactory
 
 import time
@@ -14,10 +14,10 @@ import robotPlan_class as rc
 #robot_path_delim = ':'
 #robot_robot_delim = ';'
 #path_path_delim = '-'
-arbiNavManager = "agent://www.arbi.com/navManager"
-arbiMAPF = "agent://www.arbi.com/MAPF"
-arbiMapManager = "agent://www.arbi.com/MapManagerAgent"
-arbiThis = "agent://www.arbi.com/TA"
+arbiNavManager = "agent://www.arbi.com/Loca/NavigationController"
+arbiMAPF = "agent://www.arbi.com/Local/MultiAgentPathFinder"
+arbiMapManager = "agent://www.arbi.com/Local/MapManager"
+arbiThis = "agent://www.arbi.com/Local/TaskAllocator"
 
 alloc_gl_name = 'TaskAllocation'
 out_gl_name = 'AgentRecommended'
@@ -26,7 +26,7 @@ robotMap = {"lift":["AMR_LIFT1", "AMR_LIFT2"], "tow":["AMR_TOW1","AMR_TOW2"]}
 
 
 class aAgent(ArbiAgent):
-    def __init__(self, agent_name, broker_url = "tcp://127.0.0.1:61616"):
+    def __init__(self, agent_name, broker_url = "tcp://172.16.165.106:61313"):
         super().__init__()
         self.broker_url = broker_url
         self.agent_name = agent_name
@@ -50,7 +50,7 @@ class aAgent(ArbiAgent):
         return "(query ok)"
 
     def execute(self, broker_type=2):
-        arbi_agent_excutor.excute(self.broker_url, self.agent_name, self, broker_type)
+        arbi_agent_executor.execute(self.broker_url, self.agent_name, self, broker_type)
         print(self.agent_name + " ready")
 
 def handleRequest(msg_gl):
@@ -188,6 +188,6 @@ if __name__ == "__main__":
     arbiAgent.execute()
 
     while(1):
-        time.sleep(0.01)
+        time.sleep(0.1)
         
 
