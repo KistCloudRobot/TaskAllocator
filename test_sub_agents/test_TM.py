@@ -10,8 +10,6 @@ arbiMAPF = "agent://www.arbi.com/MAPF"
 arbiMapManager = "agent://www.arbi.com/MapManagerAgent"
 arbiTA = "agent://www.arbi.com/TA"
 
-robotMap = {"lift":["AMR_LIFT1", "AMR_LIFT2"], "tow":["AMR_TOW1","AMR_TOW2"]}
-
 
 class aAgent(ArbiAgent):
     def __init__(self, agent_name, broker_url = "tcp://127.0.0.1:61616"):
@@ -50,7 +48,7 @@ arbi.execute()
 #testMsg = "(taskAllocation \"StoringCarrier\" (goal (metadata \"donno\") \"dc\" (argument \"idk\" \"station3\" \"\")))"
 #testMsg = "(TaskAllocation (role \"goalID1\" \"station3\"))"
 #testMsg = "(TaskAllocation (role \"goalID1\" \"station3\") (role \"goalID2\" \"station6\") (role \"towGoal\" \"station20\"))"
-testMsg = "(TaskAllocation (role \"goalID1\" \"234\") (role \"goalID2\" \"235\")"
+testMsg = "(TaskAllocation (role \"goalID1\" \"132\") (role \"goalID2\" \"126\") (role \"goalID3\" \"105\") (role \"goalID2\" \"128\"))"
 
 print(arbi.request(arbiTA,testMsg))
 

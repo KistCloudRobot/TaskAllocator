@@ -22,8 +22,8 @@ arbiThis = "agent://www.arbi.com/TA"
 alloc_gl_name = 'TaskAllocation'
 out_gl_name = 'AgentRecommended'
 
-robotMap = {"lift":["AMR_LIFT1", "AMR_LIFT2"], "tow":["AMR_TOW1","AMR_TOW2"]}
-
+# robotMap = {"lift":["AMR_LIFT1", "AMR_LIFT2"], "tow":["AMR_TOW1","AMR_TOW2"]}
+robotMap = {"lift":["AMR_LIFT1", "AMR_LIFT2", "AMR_LIFT3", "AMR_LIFT4"], "tow":[]}
 
 class aAgent(ArbiAgent):
     def __init__(self, agent_name, broker_url = "tcp://127.0.0.1:61616"):
@@ -126,7 +126,7 @@ def parseTMreq(gl):
             is_station_dict[arg_sp[0]] = False
 
     #use all robots for all plannings for now
-    corr_robots = robot_names_all  
+    corr_robots = robot_names_all
 
     robotPlanSet = []
     for r in corr_robots:
