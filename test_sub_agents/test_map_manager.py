@@ -10,7 +10,7 @@ arbiMAPF = "agent://www.arbi.com/MAPF"
 arbiMapManager = "agent://www.arbi.com/MapManagerAgent"
 arbiThis = "agent://www.arbi.com/TA"
 
-robotMap = {"lift":["AMR_LIFT1", "AMR_LIFT2"], "tow":["AMR_TOW1","AMR_TOW2"]}
+robotMap = {"lift":["AMR_LIFT1", "AMR_LIFT2", "AMR_LIFT3", "AMR_LIFT4"]}
 
 
 class aAgent(ArbiAgent):
@@ -41,7 +41,7 @@ class aAgent(ArbiAgent):
         print(self.agent_name + " ready")
 
 def handle_request(msg):
-    testPosMap = {"AMR_LIFT1":"202","AMR_LIFT2":"223", "AMR_TOW1":"239", "AMR_TOW2":"237"}
+    testPosMap = {"AMR_LIFT1":"143","AMR_LIFT2":"157", "AMR_LIFT3":"146", "AMR_LIFT4":"158"}
     gl = GLFactory.new_gl_from_gl_string(msg)
     rId = str(gl.get_expression(0))[1:-1]
     return ("(RobotSpecInfo " + "(RobotInfo \"" + rId + "\" (vertex_id " + testPosMap[rId] +")" + " 0" + " 1" + " 0))")

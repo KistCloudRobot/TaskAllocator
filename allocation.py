@@ -1,9 +1,9 @@
 import deps.matching as matching
 import numpy as np
 
-from python_arbi_framework.arbi_agent.agent.arbi_agent import ArbiAgent
-from python_arbi_framework.arbi_agent.configuration import BrokerType
-from python_arbi_framework.arbi_agent.agent import arbi_agent_excutor
+from arbi_agent.agent.arbi_agent import ArbiAgent
+from arbi_agent.configuration import BrokerType
+from arbi_agent.agent import arbi_agent_executor
 from arbi_agent.model import generalized_list_factory as GLFactory
 
 import time
@@ -52,13 +52,13 @@ def planMultiAgentReqest(robotPlans, arbi, arbiMAPF):
     msgByRobot = []
     for r in robotPlans:
         if(len(r.goal) > 0):
-            singleMsg = (r.name + c.robot_path_delim + r.start + c.robot_path_delim + r.goal)
+            singleMsg = (str(r.name) + str(c.robot_path_delim) + str(r.start) + str(c.robot_path_delim) + str(r.goal))
             msgByRobot.append(singleMsg)
     reqMsg = c.robot_robot_delim.join(msgByRobot)
-
+    print(reqMsg)
     #convert to arbi msg
     arbiMsg = c.msg2arbi_req(reqMsg)
-
+    print(arbiMsg)
     reqStartTime = time.time()
     #res = arbi.request(arbiMAPF,reqMsg)
     res = arbi.request(arbiMAPF,arbiMsg)
