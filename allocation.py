@@ -1,9 +1,9 @@
 import deps.matching as matching
 import numpy as np
 
-from python_arbi_framework.arbi_agent.agent.arbi_agent import ArbiAgent
-from python_arbi_framework.arbi_agent.configuration import BrokerType
-from python_arbi_framework.arbi_agent.agent import arbi_agent_excutor
+from arbi_agent.agent.arbi_agent import ArbiAgent
+from arbi_agent.configuration import BrokerType
+from arbi_agent.agent import arbi_agent_executor
 from arbi_agent.model import generalized_list_factory as GLFactory
 
 import time

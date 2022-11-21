@@ -1,6 +1,11 @@
-from python_arbi_framework.arbi_agent.agent.arbi_agent import ArbiAgent
-from python_arbi_framework.arbi_agent.configuration import BrokerType
-from python_arbi_framework.arbi_agent.agent import arbi_agent_excutor
+import sys
+
+sys.path.append("/home/kist/pythonProject/Python-mcArbiFramework")
+
+from arbi_agent.agent.arbi_agent import ArbiAgent
+from arbi_agent.configuration import BrokerType
+from arbi_agent.ltm.data_source import DataSource
+from arbi_agent.agent import arbi_agent_executor
 from arbi_agent.model import generalized_list_factory as GLFactory
 
 import time
@@ -14,10 +19,9 @@ import robotPlan_class as rc
 #robot_path_delim = ':'
 #robot_robot_delim = ';'
 #path_path_delim = '-'
-arbiNavManager = "agent://www.arbi.com/navManager"
-arbiMAPF = "agent://www.arbi.com/MAPF"
-arbiMapManager = "agent://www.arbi.com/MapManagerAgent"
-arbiThis = "agent://www.arbi.com/TA"
+arbiNavManager = "agent://www.arbi.com/NavagiationController"
+arbiMAPF = "agent://www.arbi.com/MultiAgentPathFinder"
+data_source_name = "ds://www.arbi.com/TaskAllocator"
 
 alloc_gl_name = 'TaskAllocation'
 out_gl_name = 'AgentRecommended'
@@ -25,11 +29,20 @@ out_gl_name = 'AgentRecommended'
 # robotMap = {"lift":["AMR_LIFT1", "AMR_LIFT2"], "tow":["AMR_TOW1","AMR_TOW2"]}
 robotMap = {"lift":["AMR_LIFT1", "AMR_LIFT2", "AMR_LIFT3", "AMR_LIFT4"], "tow":[]}
 
+agentName = "agent://www.arbi.com/TaskAllocator"
+# brokerURL = "tcp://127.0.0.1:61316"
+# brokerURL = "tcp://172.16.165.141:61316"
+brokerURL = "tcp://192.168.100.10:61316"
+class TaskAllocatorDataSource(DataSource):
+    def __init__(self, aAgent):
+        self.task_allocator = aAgent
+
 class aAgent(ArbiAgent):
     def __init__(self, agent_name, broker_url = "tcp://127.0.0.1:61616"):
         super().__init__()
         self.broker_url = broker_url
         self.agent_name = agent_name
+        self.data_source = TaskAllocatorDataSource(self)
         #self.agent_url = agent_url
 
     def on_data(self, sender: str, data: str):
@@ -49,8 +62,9 @@ class aAgent(ArbiAgent):
         #print(query)
         return "(query ok)"
 
-    def execute(self, broker_type=2):
-        arbi_agent_excutor.excute(self.broker_url, self.agent_name, self, broker_type)
+    def execute(self, broker_type=BrokerType.ZERO_MQ):
+        arbi_agent_executor.execute(self.broker_url, self.agent_name, self, broker_type)
+        self.data_source.connect(self.broker_url, data_source_name, BrokerType.ZERO_MQ)
         print(self.agent_name + " ready")
 
 def handleRequest(msg_gl):
@@ -130,27 +144,38 @@ def parseTMreq(gl):
 
     robotPlanSet = []
     for r in corr_robots:
-        #get vertex and availability of each robot from map manager
-        res = arbiAgent.query(arbiMapManager,"(RobotSpecInfo \"" + r + "\")")
-        #(RobotSpecInfo (RobotInfo $robot_id (vertex_id $v_id1 $v_id2) $load $goalVertex $goalID), …)
-        res_gl = GLFactory.new_gl_from_gl_string(res)
-        #(RobotInfo $robot_id (vertex_id $v_id1 $v_id2) $load $goal)           
-        res_sub_gl = GLFactory.new_gl_from_gl_string(str(res_gl.get_expression(0)))
-        if(c.glEx2str(res_sub_gl.get_expression(0)) == r):
-            #choose the first neighboring vertex as the start point
-            v = c.glEx2str(GLFactory.new_gl_from_gl_string(str(res_sub_gl.get_expression(1))).get_expression(0))
-            #unload = 0, load = 1
-            load = str(res_sub_gl.get_expression(2))
-            #not currently in use
-            cur_goal=str(res_sub_gl.get_expression(3))
-            #goal_id = allocated task id (0 means robot is not working currently)
-            goal_id = str(res_sub_gl.get_expression(4))
-            #do not add to robot list if robot is allocated
-            if(goal_id == '0'):
-                robotPlanSet.append(rc.robotPlan(r,v))
 
+        # get robot status from ltm
+        print("start : " + str(r))
+        query_robot_at = "(context (robotAt \"" + str(r) + "\" $v1 $v2))"
+        query_result_robot_at = arbiAgent.data_source.retrieve_fact(query_robot_at)
+        gl_query_result_robot_at = GLFactory.new_gl_from_gl_string(query_result_robot_at)
+        v = gl_query_result_robot_at.get_expression(0).as_generalized_list().get_expression(1).as_value().int_value()
+        query_robot_loading = "(context (robotLoading \"" + str(r) + "\" $v1))"
+        print(query_robot_loading)
+        query_result_robot_loading = arbiAgent.data_source.retrieve_fact(query_robot_loading)
+        print(query_result_robot_loading)
+        if (query_result_robot_loading == "(error)"):
+            pass
         else:
-            pic.printC("Robot ID not Matched", 'fail')
+            gl_query_result_robot_loading = GLFactory.new_gl_from_gl_string(query_result_robot_loading)
+            loading = gl_query_result_robot_loading.get_expression(0).as_generalized_list().get_expression(
+                1).as_value().string_value()
+
+        query_robot_task = "(goalAssigned $v1 \"agent://www.mcarbi.com/" + str(r) + "\")"
+        query_result_robot_task = arbiAgent.data_source.retrieve_fact(query_robot_task)
+        print(query_result_robot_task)
+        if query_result_robot_task == "(error)":
+            print(str(r) + ' is not working')
+            goal_id = 0
+        else:
+            gl_query_result_robot_task = GLFactory.new_gl_from_gl_string(query_result_robot_task)
+            goal_id = gl_query_result_robot_task.get_expression(0).as_value().string_value()
+
+        if goal_id == 0:
+            robotPlanSet.append(rc.robotPlan(r, v))
+            print(robotPlanSet)
+        print("finished")
     #return corr_robots, goalID, goalName, goalArgs, robotPlanSet, goals[0] #assume this GL constains only one task allocation request
     return corr_robots, goalID, robotPlanSet ,goals, is_station_dict
 
@@ -187,7 +212,7 @@ def generate_TM_response(allocRobotPlans, goalID, is_station_dict):
 if __name__ == "__main__":
     #Create and start an ARBI Agent
     global arbiAgent
-    arbiAgent = aAgent(arbiThis)
+    arbiAgent = aAgent(agent_name=agentName, broker_url=brokerURL)
     arbiAgent.execute()
 
     while(1):
