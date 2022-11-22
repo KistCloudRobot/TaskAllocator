@@ -36,14 +36,19 @@ def allocationCore(robots,goals,arbiAgent,arbiMAPF):
     print(allocMat)
     print("\nThe cost sum: %f" %cost)
     
+    # consider not allocated agents
     #iterate matrix to extract allocation result
     #result = name1:node1,node2, ... ,noden;name2:node1,node2, ... ,noden
     allocRobotPlans = []
     for row in range(len(robots)):
-        for col in range(len(goals)):
-            if(allocMat[row][col] == 1):
-                robots[row].goal = goals[col]
-                allocRobotPlans.append(robots[row])
+        if sum(allocMat[row]) == 0:
+            robots[row].goal = robots[row].start
+            allocRobotPlans.append(robots[row])
+        else:
+            for col in range(len(goals)):
+                if(allocMat[row][col] == 1):
+                    robots[row].goal = goals[col]
+                    allocRobotPlans.append(robots[row])
     
     return allocRobotPlans
 

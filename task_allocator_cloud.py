@@ -2,10 +2,7 @@ import sys
 import time
 import pathlib
 
-currentFilePath = pathlib.Path(__file__).parent.resolve()
-print(str(currentFilePath))
-sys.path.append(str(currentFilePath))
-sys.path.append("/home/uosai/pythonProject/PythonARBIFramework")
+sys.path.append("/home/kist/pythonProject/Python-mcArbiFramework")
 
 from arbi_agent.agent.arbi_agent import ArbiAgent
 from arbi_agent.agent import arbi_agent_executor
@@ -35,7 +32,7 @@ robotMap = {"lift": ["AMR_LIFT1", "AMR_LIFT2", "AMR_LIFT3", "AMR_LIFT4"]}
 
 agentName = "agent://www.arbi.com/TaskAllocator"
 # brokerURL = "tcp://127.0.0.1:61316"
-brokerURL = "tcp://172.16.165.141:61316"
+brokerURL = "tcp://192.168.100.10:61316"
 
 
 class TaskAllocatorDataSource(DataSource):
@@ -229,6 +226,7 @@ def generate_TM_response(allocRobotPlans, goalID, is_station_dict):
 
 
 if __name__ == "__main__":
+    print("custom")
     # Create and start an ARBI Agent
     if len(sys.argv) > 1:
         ip = sys.argv[1]
