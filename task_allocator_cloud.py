@@ -25,7 +25,6 @@ import robotPlan_class as rc
 # path_path_delim = '-'
 arbiNavManager = "agent://www.arbi.com/NavagiationController"
 arbiMAPF = "agent://www.arbi.com/MultiAgentPathFinder"
-data_source_name = "ds://www.arbi.com/TaskAllocator"
 
 alloc_gl_name = 'TaskAllocation'
 out_gl_name = 'AgentRecommended'
@@ -33,9 +32,15 @@ out_gl_name = 'AgentRecommended'
 # robotMap = {"lift": ["AMR_LIFT1", "AMR_LIFT2"]}
 robotMap = {"lift": ["AMR_LIFT1", "AMR_LIFT2", "AMR_LIFT3", "AMR_LIFT4"]}
 
-agentName = "agent://www.arbi.com/TaskAllocator"
-# brokerURL = "tcp://127.0.0.1:61316"
-brokerURL = "tcp://192.168.100.10:61316"
+agent_name = "agent://www.arbi.com/TaskAllocator"
+data_source_name = "ds://www.arbi.com/TaskAllocator"
+broker_host = "127.0.0.1"
+# broker_host = "172.16.165.141"
+# broker_host = "192.168.100.10"
+broker_port = 61316
+# broker_type = BrokerType.ACTIVE_MQ
+broker_type = BrokerType.ZERO_MQ
+
 
 
 class TaskAllocatorDataSource(DataSource):
@@ -44,19 +49,17 @@ class TaskAllocatorDataSource(DataSource):
 
 
 class aAgent(ArbiAgent):
-    def __init__(self, agent_name, broker_url="tcp://127.0.0.1:61316"):
+    def __init__(self):
         super().__init__()
-        self.broker_url = broker_url
-        self.agent_name = agent_name
         self.data_source = TaskAllocatorDataSource(self)
-        self.data_source.connect(broker_url, data_source_name, BrokerType.ZERO_MQ)
+        self.data_source.connect(broker_host, broker_port, data_source_name, broker_type)
         # self.agent_url = agent_url
 
     def on_data(self, sender: str, data: str):
-        print(self.agent_url + "\t-> receive data : " + data)
+        print("receive data : " + data)
 
     def on_request(self, sender: str, request: str) -> str:
-        print(self.agent_url + "\t-> receive request : " + request)
+        print("receive request : " + request)
         # return "(request ok)"
         return handleRequest(request)
 
@@ -66,14 +69,9 @@ class aAgent(ArbiAgent):
     """
 
     def on_query(self, sender: str, query: str) -> str:
-        print(self.agent_url + "\t-> receive query : " + query)
+        print("receive query : " + query)
         # print(query)
         return "(query ok)"
-
-    def execute(self, broker_type=2):
-        arbi_agent_executor.execute(self.broker_url, self.agent_name, self, broker_type=BrokerType.ZERO_MQ,
-                                    daemon=False)
-        print(self.agent_name + " ready")
 
 
 def handleRequest(msg_gl):
@@ -87,7 +85,7 @@ def handleRequest(msg_gl):
     goalArgs = []  # this stores target
     gl = generalized_list_factory.new_gl_from_gl_string(msg_gl)
     gl_name = gl.get_name()
-    if (gl_name == alloc_gl_name):
+    if gl_name == alloc_gl_name:
         # corr_robots, goalID, goalName, goalArgs, robotPlanSet, goals = parseTMreq(gl)
         # It will get current positions of all robots as well
         corr_robots, goalID, robotPlanSet, goals, is_station_dict = parseTMreq(gl)
@@ -104,13 +102,13 @@ def handleRequest(msg_gl):
         # fill cost matrix
         # n by m matrix. n = n of robots (rows), m = number of goals(cols)
         # cost_mat = np.random.rand(nRobots, nRobots*numWays)*10
-        allocRobotPlans = alloc.allocationCore(robots, goals, arbiAgent, arbiMAPF)
+        allocRobotPlans = alloc.allocationCore(robots, goals, agent, arbiMAPF)
         # final Multi Agent plan Request
 
         return generate_TM_response(allocRobotPlans, goalID, is_station_dict)
         # return finalResult_gl
         # toss it to other ARBI Agent
-        # arbiAgent.send(arbiNavManager, finalResult)
+        # agent.send(arbiNavManager, finalResult)
     else:
         pic.printC("Unknown Request GL Name " + gl_name, 'fail')
         return
@@ -157,23 +155,23 @@ def parseTMreq(gl):
 
     robotPlanSet = []
     for r in corr_robots:
-
         # get robot status from ltm
         query_robot_at = "(context (robotAt \"" + str(r) + "\" $v1 $v2))"
-        query_result_robot_at = arbiAgent.data_source.retrieve_fact(query_robot_at)
+        query_result_robot_at = agent.data_source.retrieve_fact(query_robot_at)
         gl_query_result_robot_at = generalized_list_factory.new_gl_from_gl_string(query_result_robot_at)
         v = gl_query_result_robot_at.get_expression(0).as_generalized_list().get_expression(1).as_value().int_value()
+        '''
         query_robot_loading = "(context (robotLoading \"" + str(r) + "\" $v1))"
-        query_result_robot_loading = arbiAgent.data_source.retrieve_fact(query_robot_loading)
+        query_result_robot_loading = agent.data_source.retrieve_fact(query_robot_loading)
         if (query_result_robot_loading == "(error)"):
             pass
         else:
             gl_query_result_robot_loading = generalized_list_factory.new_gl_from_gl_string(query_result_robot_loading)
             loading = gl_query_result_robot_loading.get_expression(0).as_generalized_list().get_expression(
                 1).as_value().string_value()
-
+        '''
         query_robot_task = "(goalAssigned $v1 \"agent://www.mcarbi.com/" + str(r) + "\")"
-        query_result_robot_task = arbiAgent.data_source.retrieve_fact(query_robot_task)
+        query_result_robot_task = agent.data_source.retrieve_fact(query_robot_task)
         if query_result_robot_task == "(error)":
             print(str(r) + ' is not working')
             goal_id = 0
@@ -192,7 +190,7 @@ def parseTMreq(gl):
 def generate_TM_response(allocRobotPlans, goalID, is_station_dict):
     # final Multi Agent plan Request
     # print('generate TM response')
-    finalResult_gl = alloc.planMultiAgentReqest(allocRobotPlans, arbiAgent, arbiMAPF)
+    finalResult_gl = alloc.planMultiAgentReqest(allocRobotPlans, agent, arbiMAPF)
     finalResult = c.arbi2msg_res(finalResult_gl)
     if (finalResult == ''):  # failed
         return c.msg2arbi_req('failed')
@@ -219,17 +217,14 @@ def generate_TM_response(allocRobotPlans, goalID, is_station_dict):
 
 if __name__ == "__main__":
     # Create and start an ARBI Agent
-    if len(sys.argv) > 1:
-        ip = sys.argv[1]
-    else:
-        ip = brokerURL
-    global arbiAgent
-    arbiAgent = aAgent(agent_name=agentName, broker_url=ip)
-    arbiAgent.execute()
+    global agent
+    agent = aAgent()
+    arbi_agent_executor.execute(broker_host=broker_host, broker_port=broker_port, agent_name=agent_name,
+                                agent=agent, broker_type=broker_type, daemon=False)
     '''
-    response = arbiAgent.request(arbiTaskAllocator,"(TaskAllocation (PalletTransported \"Local1\" \"http://www.arbi.com/ontologies/arbi.owl#station1\"))")
+    response = agent.request(arbiTaskAllocator,"(TaskAllocation (PalletTransported \"Local1\" \"http://www.arbi.com/ontologies/arbi.owl#station1\"))")
     print("response is " + str(response))
-    response = arbiAgent.request(arbiTaskAllocator,
+    response = agent.request(arbiTaskAllocator,
                                  "((TaskAllocation (PalletTransported \"Local2\" \"http://www.arbi.com/ontologies/arbi.owl#station20\"))")
     print("response is " + str(response))
     '''
