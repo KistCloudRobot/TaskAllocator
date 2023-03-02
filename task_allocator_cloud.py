@@ -34,12 +34,12 @@ robotMap = {"lift": ["AMR_LIFT1", "AMR_LIFT2", "AMR_LIFT3", "AMR_LIFT4"]}
 
 agent_name = "agent://www.arbi.com/TaskAllocator"
 data_source_name = "ds://www.arbi.com/TaskAllocator"
-broker_host = "127.0.0.1"
-# broker_host = "172.16.165.141"
+# broker_host = "127.0.0.1"
+broker_host = "172.16.165.158"
 # broker_host = "192.168.100.10"
 broker_port = 61316
-# broker_type = BrokerType.ACTIVE_MQ
-broker_type = BrokerType.ZERO_MQ
+broker_type = BrokerType.ACTIVE_MQ
+# broker_type = BrokerType.ZERO_MQ
 
 
 
