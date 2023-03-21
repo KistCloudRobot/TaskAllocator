@@ -12,12 +12,26 @@ import deps.printInColor as pic
 import conversions as c
 import robotPlan_class as rc
 
+TPL_address = "agent://www.arbi.com/TaskPolicyLearner"
 
 def allocationCore(robots, goals, arbiAgent, arbiMAPF):
     # create and fill cost matrix
     cost_mat = generateCostMatrix(robots, goals, arbiAgent, arbiMAPF)
+
+
+    # create and fill safety, efficiency matrix
+    tpl_res = req_TPL(robots,goals,arbiAgent,arbiMAPF)
+    s_mat, e_mat = generateSEMatrix(tpl_res)
+
+    s_mat = c.makeSqMat(s_mat)
+    e_mat = c.makeSqMat(e_mat)
+
+    se_mat = s_mat + e_mat
+    se_mat_to_cost = se_mat * -1
+
     # fill missing rows/cols to make it square
     cost_mat = c.makeSqMat(cost_mat)
+    cost_mat = cost_mat + se_mat_to_cost
     # assignment, cost = matching.matching(cost_mat, numWays)
     assignment, cost = matching.matching(cost_mat)
     allocMat = assignment.astype("int")
@@ -33,6 +47,10 @@ def allocationCore(robots, goals, arbiAgent, arbiMAPF):
     print("***RESULT***\n")
     print("The cost matrix")
     print(cost_mat)
+    print("Safety matrix")
+    print(s_mat)
+    print("Efficiency matrix")
+    print(e_mat)
     print("\nThe optimal allocation")
     print(allocMat)
     print("\nThe cost sum: %f" % cost)
@@ -73,6 +91,32 @@ def planMultiAgentReqest(robotPlans, arbi, arbiMAPF):
     # return in gl format
     return res
     # return res
+
+
+# request to TPL
+def req_TPL(robots, goal, arbi, arbiMAPF):
+
+    robot_msg = "(Robot"
+    for r in robots:
+        robot_msg = robot_msg +" " + str(r.name)
+    robot_msg = robot_msg +")"
+    msg = "(TaskPolicy "+robot_msg+" "+goal[0]+")"
+    print("requestToTPL => ", msg)
+    res = arbi.request(TPL_address, msg)
+    return res
+
+# generate safety&efficiency matrix
+def generateSEMatrix(msg):
+    tmp = msg.split("(")
+    s = tmp[3].split(")")[0].split()[1:]
+    e = tmp[4].split(")")[0].split()[1:]
+    s_mat = np.ones((len(s), 1))
+    e_mat = np.ones((len(e), 1))
+    for i in range(len(e)):
+        s_mat[i,0] = np.float(s[i])
+        e_mat[i,0] = np.float(e[i])
+
+    return s_mat, e_mat
 
 
 def generateCostMatrix(robotPlans, goals, arbi, arbiMAPF):
