@@ -1,0 +1,8 @@
+robots:
+  - name: AMR_LIFT1
+    start: 143
+  - name: AMR_LIFT2
+    start: 158
+goals:
+  - 12
+  - 46
