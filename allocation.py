@@ -12,7 +12,12 @@ import deps.printInColor as pic
 import conversions as c
 import robotPlan_class as rc
 
+from log.setup import logger
+
 def allocationCore(robots,goals,arbiAgent,arbiMAPF):
+    logger.info("robots={}".format(robots))
+    logger.info("goals={}".format(goals))
+    
     #create and fill cost matrix
     cost_mat = generateCostMatrix(robots,goals,arbiAgent,arbiMAPF)
     #fill missing rows/cols to make it square
@@ -29,12 +34,18 @@ def allocationCore(robots,goals,arbiAgent,arbiMAPF):
                 allocMat[i,j] = int(0)
 
     #print("***RESULT (numWays = %d)***\n" %numWays)
-    print("***RESULT***\n")
-    print("The cost matrix")
-    print(cost_mat)
-    print("\nThe optimal allocation")
-    print(allocMat)
-    print("\nThe cost sum: %f" %cost)
+    # print("***RESULT***\n")
+    # print("The cost matrix")
+    # print(cost_mat)
+    # print("\nThe optimal allocation")
+    # print(allocMat)
+    # print("\nThe cost sum: %f" %cost)
+    logger.info("***RESULT***\n")
+    logger.info("The cost matrix")
+    logger.info(cost_mat)
+    logger.info("\nThe optimal allocation")
+    logger.info(allocMat)
+    logger.info("\nThe cost sum: %f" %cost)
     
     # consider not allocated agents
     #iterate matrix to extract allocation result
@@ -68,7 +79,8 @@ def planMultiAgentReqest(robotPlans, arbi, arbiMAPF):
     #res = arbi.request(arbiMAPF,reqMsg)
     res = arbi.request(arbiMAPF,arbiMsg)
     reqEndTime = time.time()
-    pic.printC("Handling request took " + str(reqEndTime - reqStartTime) + " seconds", 'warning')
+    # pic.printC("Handling request took " + str(reqEndTime - reqStartTime) + " seconds", 'warning')
+    logger.warning("Handling request took " + str(reqEndTime - reqStartTime) + " seconds")
 
     #return in gl format
     return res
