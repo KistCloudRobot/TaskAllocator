@@ -20,6 +20,8 @@ import allocation as alloc
 
 import robotPlan_class as rc
 
+from log.setup import logger
+
 # robot_path_delim = ':'
 # robot_robot_delim = ';'
 # path_path_delim = '-'
@@ -194,7 +196,8 @@ def generate_TM_response(allocRobotPlans, goalID, is_station_dict):
     finalResult = c.arbi2msg_res(finalResult_gl)
     if (finalResult == ''):  # failed
         return c.msg2arbi_req('failed')
-    pic.printC("Allocation Result: " + finalResult, 'cyan')
+    # pic.printC("Allocation Result: " + finalResult, 'cyan')
+    logger.info("Allocation Result: " + finalResult, 'cyan')
     finalResult_list_by_robot = finalResult.split(c.robot_robot_delim)
     out_id_goal_pair_list = []
     for robot in finalResult_list_by_robot:

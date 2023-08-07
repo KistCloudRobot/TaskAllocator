@@ -12,9 +12,14 @@ import deps.printInColor as pic
 import conversions as c
 import robotPlan_class as rc
 
+from log.setup import logger
+
 TPL_address = "agent://www.arbi.com/TaskPolicyLearner"
 
 def allocationCore(robots, goals, arbiAgent, arbiMAPF):
+    logger.info("robots={}".format(robots))
+    logger.info("goals={}".format(goals))
+
     # create and fill cost matrix
     cost_mat = generateCostMatrix(robots, goals, arbiAgent, arbiMAPF)
 
@@ -44,16 +49,26 @@ def allocationCore(robots, goals, arbiAgent, arbiMAPF):
                 allocMat[i, j] = int(0)
 
     # print("***RESULT (numWays = %d)***\n" %numWays)
-    print("***RESULT***\n")
-    print("The cost matrix")
-    print(cost_mat)
-    print("Safety matrix")
-    print(s_mat)
-    print("Efficiency matrix")
-    print(e_mat)
-    print("\nThe optimal allocation")
-    print(allocMat)
-    print("\nThe cost sum: %f" % cost)
+    # print("***RESULT***\n")
+    # print("The cost matrix")
+    # print(cost_mat)
+    # print("Safety matrix")
+    # print(s_mat)
+    # print("Efficiency matrix")
+    # print(e_mat)
+    # print("\nThe optimal allocation")
+    # print(allocMat)
+    # print("\nThe cost sum: %f" % cost)
+    logger.info("***RESULT***\n")
+    logger.info("The cost matrix")
+    logger.info(cost_mat)
+    logger.info("Safety matrix")
+    logger.info(s_mat)
+    logger.info("Efficiency matrix")
+    logger.info(e_mat)
+    logger.info("\nThe optimal allocation")
+    logger.info(allocMat)
+    logger.info("\nThe cost sum: %f" % cost)
 
     # consider not allocated agents
     # iterate matrix to extract allocation result
