@@ -3,8 +3,8 @@ import os
 from datetime import datetime
 
 log_dir = os.path.dirname(os.path.abspath(__file__)) + '/'
-file_name = 'task_allocator_cloud_'
-file_name += datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
+file_name = 'task_allocator_cloud'
+# file_name += datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
 file_name += '.log'
 
 logger = logging.getLogger(__name__)

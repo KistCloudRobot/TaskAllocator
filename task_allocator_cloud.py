@@ -52,12 +52,16 @@ class aAgent(ArbiAgent):
         # self.agent_url = agent_url
 
     def on_data(self, sender: str, data: str):
-        print(self.agent_url + "\t-> receive data : " + data)
+        # print(self.agent_url + "\t-> receive data : " + data)
+        logger.info(self.agent_url + "\t-> receive data : " + data)
 
     def on_request(self, sender: str, request: str) -> str:
-        print(self.agent_url + "\t-> receive request : " + request)
+        # print(self.agent_url + "\t-> receive request : " + request)
+        logger.info(self.agent_url + "\t-> receive request : " + request)
         # return "(request ok)"
-        return handleRequest(request)
+        response = handleRequest(request) 
+        logger.info(self.agent_url + "\t-> response : " + response)
+        return response
 
     """
     def on_notify(self, content):
@@ -72,7 +76,8 @@ class aAgent(ArbiAgent):
     def execute(self, broker_type=2):
         arbi_agent_executor.execute(self.broker_url, self.agent_name, self, broker_type=BrokerType.ZERO_MQ,
                                     daemon=False)
-        print(self.agent_name + " ready")
+        # print(self.agent_name + " ready")
+        logger.info(self.agent_name + " ready")
 
 
 def handleRequest(msg_gl):
@@ -207,7 +212,7 @@ def generate_TM_response(allocRobotPlans, goalID, is_station_dict):
     if (finalResult == ''):  # failed
         return c.msg2arbi_req('failed')
     # pic.printC("Allocation Result: " + finalResult, 'cyan')
-    logger.info("Allocation Result: " + finalResult, 'cyan')
+    logger.info("Allocation Result: " + finalResult)
     finalResult_list_by_robot = finalResult.split(c.robot_robot_delim)
     out_id_goal_pair_list = []
     for robot in finalResult_list_by_robot:
